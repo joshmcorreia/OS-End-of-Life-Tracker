@@ -27,6 +27,7 @@ class EndOfLifeTracker:
             self.read_raw_data_folder()
 
         self.wazuh_agents: list[WazuhAgent] = []
+        self.unsupported_wazuh_platforms: list[WazuhAgent] = []
         self.load_agent_data()
         self.supported_os = {}
 
@@ -90,11 +91,12 @@ class EndOfLifeTracker:
             try:
                 if agent["id"] == "000": # skip the wazuh-manager
                     continue
-                config_dict = self.get_config_matching_operating_system(wazuh_platform=agent["os"]["platform"])
+                wazuh_platform=agent["os"]["platform"]
+                config_dict = self.get_config_matching_operating_system(wazuh_platform=wazuh_platform)
                 wazuh_agent = WazuhAgent(agent_dict=agent, sqlite_filename=self.sqlite_filename, config_dict=config_dict)
                 self.wazuh_agents.append(wazuh_agent)
-            except UnsupportedWazuhPlatformException as err:
-                print(f"ERROR: Unsupported Wazuh platform: {err}\n")
+            except UnsupportedWazuhPlatformException:
+                self.unsupported_wazuh_platforms.append(wazuh_platform)
             except UnsupportedOSException as err:
                 print(f"ERROR: Unsupported OS: {err}\n")
 
@@ -119,12 +121,24 @@ class EndOfLifeTracker:
             elif agent.days_until_EOL < self.days_until_EOL_warning:
                 almost_EOL_machines.append(agent)
 
+        output_message = ""
+
+        if len(self.unsupported_wazuh_platforms) > 0:
+            output_message += "The following Wazuh platforms are not supported:\n"
+            output_message += "\n".join(self.unsupported_wazuh_platforms)
+            output_message += "\n\n"
+
         if len(EOL_machines) > 0:
-            print("\nThe following machines have reached EOL:")
+            output_message += "The following machines have reached EOL:\n"
             for agent in EOL_machines:
-                print(f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {abs(agent.days_until_EOL)} days ago")
+                output_message += f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {abs(agent.days_until_EOL)} days ago\n"
+            output_message += "\n"
 
         if len(almost_EOL_machines) > 0:
-            print("\nThe following machines are almost EOL:")
+            output_message += "The following machines are almost EOL:\n"
             for agent in almost_EOL_machines:
-                print(f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {agent.days_until_EOL} days away")
+                output_message += f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {agent.days_until_EOL} days away\n"
+
+        if len(output_message) != 0:
+            output_message = output_message.rstrip()
+            print(output_message)
