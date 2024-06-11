@@ -17,3 +17,5 @@ operating_systems:
   - endoflifedate_product: ubuntu
     wazuh_platform: ubuntu
     EOL_column: eol
+
+days_until_EOL_warning: 180

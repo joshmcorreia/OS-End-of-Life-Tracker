@@ -1,3 +1,4 @@
+from datetime import datetime
 from OperatingSystem import OperatingSystem
 from SQLiteDatabase import SQLiteDatabase
 
@@ -52,4 +53,17 @@ class WazuhAgent:
             result = database.cursor.fetchall()
             if not result:
                 raise UnsupportedOSException(f"Platform: `{self.OS.platform}`, Major/Minor version: `{self.OS.major_minor}`")
-            self.end_of_life_date = result[0][0]
+            end_of_life_date_string = result[0][0]
+            self.end_of_life_date = datetime.strptime(end_of_life_date_string, "%Y-%m-%d").date()
+            self.today = datetime.today().date()
+            self.days_until_EOL = (self.end_of_life_date - self.today).days
+
+    @property
+    def time_until_EOL(self):
+        if self.days_until_EOL < 0:
+            EOL_message = f"The OS on this machine reached end of life {abs(self.days_until_EOL)} days ago!"
+        elif self.days_until_EOL == 0:
+            EOL_message = "The OS on this machine reaches end of life today!"
+        elif self.days_until_EOL > 0:
+            EOL_message = f"The OS on this machine reaches end of life in {self.days_until_EOL} days."
+        return EOL_message

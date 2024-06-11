@@ -67,7 +67,9 @@ class EndOfLifeTracker:
         try:
             config_file_name = "./config.yaml"
             with open(config_file_name, "r") as file_in:
-                self.operating_systems = yaml.safe_load(file_in)["operating_systems"]
+                yaml_dict = yaml.safe_load(file_in)
+                self.operating_systems = yaml_dict["operating_systems"]
+                self.days_until_EOL_warning = yaml_dict["days_until_EOL_warning"]
         except Exception as err:
             raise FailedToParseConfigFileException(err)
 
@@ -108,6 +110,7 @@ class EndOfLifeTracker:
             supported_os[filename] = supported_os_data
         self.supported_os = supported_os
 
-    def print_agents(self):
+    def check_all_agents(self):
         for agent in self.wazuh_agents:
-            print(f"{agent.name} - {agent.OS.name} - {agent.OS.version} - {agent.end_of_life_date}")
+            if agent.days_until_EOL < self.days_until_EOL_warning:
+                print(f"{agent.name},{agent.OS.name},{agent.OS.version},{agent.time_until_EOL}")
