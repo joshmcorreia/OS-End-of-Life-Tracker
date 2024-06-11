@@ -1,16 +1,26 @@
 import glob
 import json
 import os
+import yaml
 from SQLiteDatabase import SQLiteDatabase
 from WazuhAgent import WazuhAgent, UnsupportedOSException
+
+
+class FailedToParseConfigFileException(Exception):
+    pass
 
 
 class SQLiteDatabaseAlreadyExistsException(Exception):
     pass
 
 
+class UnsupportedWazuhPlatformException(Exception):
+    pass
+
+
 class EndOfLifeTracker:
     def __init__(self) -> None:
+        self.read_config_from_file()
         self.sqlite_filename = "end_of_life.db"
         if not os.path.exists(self.sqlite_filename):
             self.initialize_sqlite_database()
@@ -53,6 +63,20 @@ class EndOfLifeTracker:
             database.connection.commit()
             return database.cursor.lastrowid
 
+    def read_config_from_file(self):
+        try:
+            config_file_name = "./config.yaml"
+            with open(config_file_name, "r") as file_in:
+                self.operating_systems = yaml.safe_load(file_in)["operating_systems"]
+        except Exception as err:
+            raise FailedToParseConfigFileException(err)
+
+    def get_config_matching_operating_system(self, wazuh_platform: str):
+        for operating_system in self.operating_systems:
+            if operating_system["wazuh_platform"] == wazuh_platform:
+                return operating_system
+        raise UnsupportedWazuhPlatformException(wazuh_platform)
+
     def read_json_from_file(self, filename):
         with open(filename, "r") as file_in:
             return json.load(file_in)
@@ -62,8 +86,13 @@ class EndOfLifeTracker:
 
         for agent in agent_data["data"]["affected_items"]:
             try:
-                wazuh_agent = WazuhAgent(agent_dict=agent, sqlite_filename=self.sqlite_filename)
+                if agent["id"] == "000": # skip the wazuh-manager
+                    continue
+                config_dict = self.get_config_matching_operating_system(wazuh_platform=agent["os"]["platform"])
+                wazuh_agent = WazuhAgent(agent_dict=agent, sqlite_filename=self.sqlite_filename, config_dict=config_dict)
                 self.wazuh_agents.append(wazuh_agent)
+            except UnsupportedWazuhPlatformException as err:
+                print(f"ERROR: Unsupported Wazuh platform: {err}\n")
             except UnsupportedOSException as err:
                 print(f"ERROR: Unsupported OS: {err}\n")
 

@@ -5,10 +5,14 @@ from SQLiteDatabase import SQLiteDatabase
 class UnsupportedOSException(Exception):
     pass
 
+class UnsupportedEOLColumn(Exception):
+    pass
+
 
 class WazuhAgent:
-    def __init__(self, agent_dict: dict, sqlite_filename: str) -> None:
+    def __init__(self, agent_dict: dict, sqlite_filename: str, config_dict: dict) -> None:
         self.sqlite_filename = sqlite_filename
+        self.config_dict = config_dict
         self.parse_agent_dict(agent_dict=agent_dict)
         self.get_end_of_life_date_from_database()
 
@@ -31,10 +35,18 @@ class WazuhAgent:
         self.configSum = agent_dict.get("configSum", None)
 
     def get_end_of_life_date_from_database(self):
-        # TODO: allow users to configure whether to use eol, support, or extendedSupport
-        # TODO: this should be configurable per OS and should be stored in a config file
         with SQLiteDatabase(database_file_name=self.sqlite_filename) as database:
-            select_statement = "SELECT eol FROM EOLData WHERE platform=? AND (cycle=? OR cycle=?)"
+            column_name = self.config_dict["EOL_column"]
+            if column_name == "eol":
+                select_statement = "SELECT eol FROM EOLData WHERE platform=? AND (cycle=? OR cycle=?)"
+            elif column_name == "support":
+                select_statement = "SELECT support FROM EOLData WHERE platform=? AND (cycle=? OR cycle=?)"
+            elif column_name == "extendedSupport":
+                select_statement = "SELECT extendedSupport FROM EOLData WHERE platform=? AND (cycle=? OR cycle=?)"
+            elif column_name == "lts":
+                select_statement = "SELECT lts FROM EOLData WHERE platform=? AND (cycle=? OR cycle=?)"
+            else:
+                raise UnsupportedEOLColumn(column_name)
             sql_arguments = (self.OS.platform, self.OS.major_minor, self.OS.major)
             database.cursor.execute(select_statement, sql_arguments)
             result = database.cursor.fetchall()

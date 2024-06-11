@@ -1,0 +1,19 @@
+operating_systems:
+  - endoflifedate_product: centos
+    wazuh_platform: centos
+    EOL_column: eol
+  - endoflifedate_product: centos-stream
+    wazuh_platform: centos
+    EOL_column: eol
+  - endoflifedate_product: debian
+    wazuh_platform: debian
+    EOL_column: extendedSupport
+  - endoflifedate_product: rhel
+    wazuh_platform: rhel
+    EOL_column: eol
+  - endoflifedate_product: sles
+    wazuh_platform: sles
+    EOL_column: eol
+  - endoflifedate_product: ubuntu
+    wazuh_platform: ubuntu
+    EOL_column: eol
