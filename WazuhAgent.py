@@ -57,6 +57,7 @@ class WazuhAgent:
             self.end_of_life_date = datetime.strptime(end_of_life_date_string, "%Y-%m-%d").date()
             self.today = datetime.today().date()
             self.days_until_EOL = (self.end_of_life_date - self.today).days
+            self.is_end_of_life = self.days_until_EOL < 1
 
     @property
     def time_until_EOL(self):

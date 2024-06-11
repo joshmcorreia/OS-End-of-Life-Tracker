@@ -111,6 +111,20 @@ class EndOfLifeTracker:
         self.supported_os = supported_os
 
     def check_all_agents(self):
+        EOL_machines: list[WazuhAgent] = []
+        almost_EOL_machines: list[WazuhAgent] = []
         for agent in self.wazuh_agents:
-            if agent.days_until_EOL < self.days_until_EOL_warning:
-                print(f"{agent.name},{agent.OS.name},{agent.OS.version},{agent.time_until_EOL}")
+            if agent.is_end_of_life:
+                EOL_machines.append(agent)
+            elif agent.days_until_EOL < self.days_until_EOL_warning:
+                almost_EOL_machines.append(agent)
+
+        if len(EOL_machines) > 0:
+            print("\nThe following machines have reached EOL:")
+            for agent in EOL_machines:
+                print(f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {abs(agent.days_until_EOL)} days ago")
+
+        if len(almost_EOL_machines) > 0:
+            print("\nThe following machines are almost EOL:")
+            for agent in almost_EOL_machines:
+                print(f"{agent.name} - {agent.OS.name} {agent.OS.major_minor} - {agent.days_until_EOL} days away")
