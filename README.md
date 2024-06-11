@@ -20,6 +20,7 @@ This is a list of Operating Systems that I have confirmed work with this tool. O
 
 # Known issues
 - There is a known issue with SLES service pack (ex: 15-SP4) dates. At the time of writing this, the endoflife.date API does not currently track these releases, and Wazuh does not count them as minor releases. For example, if you have `SLES 12-SP4`, which was released on 2021-12-09, it is treated as if it is `SLES 12`, which was released on 2014-11-27.
+- There is not currently a way to differentiate between CentOS and CentOS Stream.
 
 ---
 
